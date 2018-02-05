@@ -1,4 +1,8 @@
 .button {
   padding: 20px;
-  color: red;
+  border: 1px black solid;
+  cursor: pointer;
+  display: inline-block;
+  width: 50px;
+  text-align: center;
 }

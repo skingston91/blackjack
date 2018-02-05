@@ -3,7 +3,7 @@ import PropTypes from 'prop-types'
 import './styles.css'
 
 const Button = ({ content, className, onClick }) => (
-  <div className={ className } onClick={ onClick }>
+  <div className={ `${ className } button` } onClick={ onClick }>
     <p> { content } </p>
   </div>
 )

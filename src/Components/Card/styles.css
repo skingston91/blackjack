@@ -1,0 +1,8 @@
+.card {
+  padding: 20px;
+  border: 1px black solid;
+  cursor: pointer;
+  display: inline-block;
+  width: 50px;
+  text-align: center;
+}

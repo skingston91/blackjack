@@ -2,11 +2,14 @@ import React from 'react'
 import PropTypes from 'prop-types'
 import './styles.css'
 
-const Card = ({ image, name, show }) => (
-  <div className='card'>
-    { show && <p> { name } </p> }
-  </div>
-)
+const Card = ({ image, name, show }) => {
+  if (!show) return null;
+  return (
+    <div className='card'>
+      <p> { name } </p>
+    </div>
+  )
+}
 
 Card.propTypes = {
   name: PropTypes.string.isRequired,
