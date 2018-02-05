@@ -10,8 +10,10 @@ export const startGame = (state) => {
   const newState = { ...state }
   const currentCardArray = [ ...newState.currentCardArray ]
   const players = newState.players.map(player => {
-    player.currentCards = dealOpeningCards(currentCardArray, player.type) // fix card array modification
-    player.score = calculateScore(player.currentCards)
+    player.currentCards = dealOpeningCards(currentCardArray, player.type)
+    const { currentScore, newCurrentCards } = calculateScore(player.currentCards)
+    player.score = currentScore
+    player.currentCards = newCurrentCards
     return player
   })
   newState.players = players
@@ -38,7 +40,7 @@ export const cardNormalizer = (card, show) => {
   }
   return {
     value: card,
-    name: card.toString(),
+    name: card && card.toString(),
     show
   }
 }
@@ -51,7 +53,7 @@ export const dealOpeningCards = (cards, type) => type === 'dealer' ?
 
 export const calculateScore = (currentCards) => {
   const newCurrentCards = [ ...currentCards ]
-  return (
+  const currentScore = (
     newCurrentCards.reduce((currentScore, card, index, currentCards) => {
       if (card.show) {
         if (currentScore >= 21) {
@@ -59,7 +61,7 @@ export const calculateScore = (currentCards) => {
             if (card.name === 'Ace' && card.value === 11) {
               card.value = 1
             }
-            currentScore = currentScore - 10;
+            currentScore = currentScore - 10
             return card
           })
         }
@@ -68,18 +70,41 @@ export const calculateScore = (currentCards) => {
       return currentScore
     }, 0)
   )
+  return { currentScore, newCurrentCards }
 }
 
-export const hitLogic = (player, currentCardArray) => {
-  const newPlayer = { ...player }
-  const newCardArray = [ ...currentCardArray ]
-  const newCard = dealCard(newCardArray)
-  newPlayer.currentCards.push(newCard)
-  newPlayer.score = newPlayer.currentCards ? calculateScore(newPlayer.currentCards) : 0
-  if (newPlayer.score > 21) {
-    newPlayer.status = 'bust'
+export const gameLogic = (state, playerIndex) => {
+  const newState = state
+  const players = newState.players
+  const player = players[playerIndex]
+  if (player.score > 21) {
+    player.status = 'bust'
   }
-  return { player: newPlayer, currentCardArray: newCardArray }
+  let endState
+  if (player.type === 'player') {
+    if (player.status === 'bust') {
+      endState = 'lose'
+    }
+    if (player.status === 'stuck') {
+      const { player: dealer, endState: newEndState } = dealerLogic(state)
+      players[0] = dealer
+      endState = newEndState
+    }
+  }
+  players[playerIndex] = player
+  return { ...newState, endState }
+}
+
+export const hitLogic = (state, playerIndex) => {
+  const newState = { ...state }
+  const players = newState.players
+  const player = players[playerIndex]
+  const newCard = dealCard(newState.currentCardArray)
+  player.currentCards.push(newCard)
+  const { currentScore, newCurrentCards } = calculateScore(player.currentCards)
+  player.score = currentScore
+  player.currentCards = newCurrentCards
+  return { players, currentCardArray: newState.currentCardArray }
 }
 
 export const stickLogic = (currentPlayer) => {
@@ -88,22 +113,28 @@ export const stickLogic = (currentPlayer) => {
   return newCurrentPlayer
 }
 
-export const dealerLogic = (players, currentCardArray) => {
-  const newPlayers = [ ...players ]
-  let newCardArrays = [ ...currentCardArray ]
+const bustLogic = (currentPlayer) => {
+  const newCurrentPlayer = { ...currentPlayer }
+  newCurrentPlayer.status = 'bust'
+  return newCurrentPlayer
+}
+
+export const dealerLogic = (state) => {
+  const newPlayers = [ ...state.players ]
+  let newCardArrays = [ ...state.currentCardArray ]
   const player = newPlayers.find(player => player.type === 'player')
   let dealer = newPlayers.find(player => player.type === 'dealer')
   const hiddenCardPosition = dealer.currentCards.findIndex((card, index) => card.show === false) // need to show the hidden card
   dealer.currentCards[hiddenCardPosition].show = true
-
-  while (player.score >= dealer.score || dealer.score > 21  ) {
-    const hitResult = hitLogic(dealer, newCardArrays)
-    dealer = hitResult.player
-    currentCardArray = hitResult.currentCardArray
+  while (player.score >= dealer.score && dealer.score < 21 ) {
+    const { players, currentCardArray } = hitLogic(state, 0)
+    dealer = players[0]
+    newCardArrays = currentCardArray
   }
 
-  if (player.score <= dealer.score || dealer.score > 21) {
-    return { player: stickLogic(dealer), endState: 'lose', currentCardArray }
+  if (player.score <= dealer.score && dealer.score <= 21) {
+    return { player: stickLogic(dealer), endState: 'lose', newCardArrays }
   }
-  return { player: stickLogic(dealer), endState: 'win', currentCardArray }
+
+  return { player: bustLogic(dealer), endState: 'win', newCardArrays }
 }
