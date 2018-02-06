@@ -127,7 +127,7 @@ export const hitLogic = (state, playerIndex) => {
   const cardResult = dealCard(newState.currentCardArray)
   const currentCards = player.currentCards.concat(cardResult.card);
   const { currentScore, newCurrentCards } = calculateScore(currentCards)
-  console.log(currentScore,currentCards, newCurrentCards);
+  
   player.score = currentScore
   player.currentCards = newCurrentCards
   return { players, currentCardArray: cardResult.cards }
