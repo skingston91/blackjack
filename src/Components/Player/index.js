@@ -17,8 +17,8 @@ const Player = ({ player, currentPlayer, index, hitClick, stickClick }) => (
       player.status === 'playing' &&
       player.score <= 21 &&
         <React.Fragment>
-          <Button content='Hit' onClick={ () => hitClick(index) } />
-          <Button content='Stick' onClick={ () => stickClick(index) } />
+          <Button content='Hit' className='move' onClick={ () => hitClick(index) } />
+          <Button content='Stick' className='move' onClick={ () => stickClick(index) } />
         </React.Fragment>
     }
   </div>

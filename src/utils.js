@@ -1,3 +1,5 @@
+import { ucs2 } from 'punycode';
+
 export const shuffleCards = (a) => {
   for (let i = a.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));
@@ -27,24 +29,38 @@ export const startGame = (state) => {
 }
 
 export const cardNormalizer = (card, show) => {
+  let code
   if (card === 'Jack' || card === 'Queen' || card === 'King') {
+    if (card === 'Jack') {
+      code = ucs2.encode([0x1F0AB])
+    }
+    if (card === 'Queen') {
+      code = ucs2.encode([0x1F0AD])
+    }
+    if (card === 'King') {
+      code = ucs2.encode([0x1F0AE])
+    }
     return {
       value: 10,
       name: card,
-      show
+      show,
+      code,
     }
   }
   if (card === 'Ace') {
     return {
       value: 11,
       name: card,
-      show
+      show,
+      code: ucs2.encode([0x1F0A1]),
     }
   }
+  code = `0x1F0A${card}`
   return {
     value: card,
     name: card && card.toString(),
-    show
+    show,
+    code: ucs2.encode([code]),
   }
 }
 
@@ -127,7 +143,7 @@ export const hitLogic = (state, playerIndex) => {
   const cardResult = dealCard(newState.currentCardArray)
   const currentCards = player.currentCards.concat(cardResult.card);
   const { currentScore, newCurrentCards } = calculateScore(currentCards)
-  
+
   player.score = currentScore
   player.currentCards = newCurrentCards
   return { players, currentCardArray: cardResult.cards }
