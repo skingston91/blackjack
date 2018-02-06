@@ -66,7 +66,7 @@ export const cardNormalizer = (card, show) => {
 
 export const dealCard = (cards, show = true) => {
   return {
-    cards: cards.slice(1, cards.length -1), card: cardNormalizer(cards.slice(1)[0], show)
+    cards: cards.slice(1, cards.length -1), card: cardNormalizer(cards[0], show)
   }
 }
 
