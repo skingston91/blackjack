@@ -8,19 +8,22 @@ export const shuffleCards = (a) => {
 
 export const startGame = (state) => {
   const newState = { ...state }
-  const currentCardArray = [ ...newState.currentCardArray ]
+  let remainingCards = [ ...newState.currentCardArray ]
   const players = newState.players.map(player => {
-    player.currentCards = dealOpeningCards(currentCardArray, player.type)
-    const { currentScore, newCurrentCards } = calculateScore(player.currentCards)
+    const openingResult =  dealOpeningCards(remainingCards, player.type)
+    remainingCards = openingResult.remainingCards
+    const { currentScore, newCurrentCards } = calculateScore(openingResult.playerCards)
     player.score = currentScore
     player.currentCards = newCurrentCards
     return player
   })
-  newState.players = players
-  newState.currentPlayer = 'Player 1'
-  newState.currentPlayerType = 'player'
-  newState.currentCardArray = currentCardArray
-  return newState
+  return {
+    ...state,
+    players,
+    currentPlayer: 'Player 1',
+    currentPlayerType: 'player',
+    currentCardArray: remainingCards
+  }
 }
 
 export const cardNormalizer = (card, show) => {
@@ -44,39 +47,60 @@ export const cardNormalizer = (card, show) => {
     show
   }
 }
-export const drawCard = (cards) => cards.shift()
-export const dealCard = (cards) => cardNormalizer(cards.shift(), true)
 
-export const dealOpeningCards = (cards, type) => type === 'dealer' ?
- [cardNormalizer(drawCard(cards), true), cardNormalizer(drawCard(cards), false)] :
- [cardNormalizer(drawCard(cards), true), cardNormalizer(drawCard(cards), true)]
+export const dealCard = (cards, show = true) => {
+  return {
+    cards: cards.slice(1, cards.length -1), card: cardNormalizer(cards.slice(1)[0], show)
+  }
+}
+
+export const dealOpeningCards = (cards, type) => {
+  const firstResult = dealCard(cards)
+  let secondResult
+  if (type === 'dealer') {
+    secondResult = dealCard(firstResult.cards, false)
+  } else {
+    secondResult = dealCard(firstResult.cards)
+  }
+  return { remainingCards: secondResult.cards, playerCards: [firstResult.card, secondResult.card] }
+}
 
 export const calculateScore = (currentCards) => {
   const newCurrentCards = [ ...currentCards ]
-  const currentScore = (
-    newCurrentCards.reduce((currentScore, card, index, currentCards) => {
-      if (card.show) {
-        if (currentScore >= 21) {
-          currentCards.find((card) => {
-            if (card.name === 'Ace' && card.value === 11) {
-              card.value = 1
-            }
-            currentScore = currentScore - 10
-            return card
-          })
-        }
-        return currentScore + card.value
-      }
-      return currentScore
-    }, 0)
-  )
-  return { currentScore, newCurrentCards }
+  const currentScore = scoreLogic(newCurrentCards);
+  const finalState = aceLogic(currentScore, newCurrentCards)
+  return { ...finalState }
+}
+
+const scoreLogic = (currentCards) => (
+  currentCards.reduce((currentScore, card, index, currentCards) => {
+    if (card.show) {
+      return currentScore + card.value
+    }
+    return currentScore
+  }, 0)
+)
+
+const aceLogic = (currentScore, currentCards) => {
+  if (currentScore < 21) {
+    return { currentScore, newCurrentCards: currentCards };
+  }
+  let newScore = currentScore;
+  const newCurrentCards = currentCards.map(card => {
+    if (card.name === 'Ace' && card.value === 11 && newScore > 21 ) {
+      card.value = 1
+      newScore = newScore - 10
+      return card
+    }
+    return card
+  })
+  return { currentScore: newScore, newCurrentCards };
 }
 
 export const gameLogic = (state, playerIndex) => {
-  const newState = state
-  const players = newState.players
-  const player = players[playerIndex]
+  const players = [ ...state.players]
+  const player = { ...players[playerIndex]}
+  let currentCardArray = [ ...state.currentCardArray ]
   if (player.score > 21) {
     player.status = 'bust'
   }
@@ -86,25 +110,27 @@ export const gameLogic = (state, playerIndex) => {
       endState = 'lose'
     }
     if (player.status === 'stuck') {
-      const { player: dealer, endState: newEndState } = dealerLogic(state)
+      const { player: dealer, endState: newEndState, currentCardArray: newCurrentCardArray } = dealerLogic(state)
       players[0] = dealer
       endState = newEndState
+      currentCardArray = newCurrentCardArray
     }
   }
   players[playerIndex] = player
-  return { ...newState, endState }
+  return { players, endState, currentCardArray }
 }
 
 export const hitLogic = (state, playerIndex) => {
   const newState = { ...state }
   const players = newState.players
   const player = players[playerIndex]
-  const newCard = dealCard(newState.currentCardArray)
-  player.currentCards.push(newCard)
-  const { currentScore, newCurrentCards } = calculateScore(player.currentCards)
+  const cardResult = dealCard(newState.currentCardArray)
+  const currentCards = player.currentCards.concat(cardResult.card);
+  const { currentScore, newCurrentCards } = calculateScore(currentCards)
+  console.log(currentScore,currentCards, newCurrentCards);
   player.score = currentScore
   player.currentCards = newCurrentCards
-  return { players, currentCardArray: newState.currentCardArray }
+  return { players, currentCardArray: cardResult.cards }
 }
 
 export const stickLogic = (currentPlayer) => {
@@ -133,8 +159,8 @@ export const dealerLogic = (state) => {
   }
 
   if (player.score <= dealer.score && dealer.score <= 21) {
-    return { player: stickLogic(dealer), endState: 'lose', newCardArrays }
+    return { player: stickLogic(dealer), endState: 'lose', currentCardArray: newCardArrays }
   }
 
-  return { player: bustLogic(dealer), endState: 'win', newCardArrays }
+  return { player: bustLogic(dealer), endState: 'win', currentCardArray: newCardArrays }
 }

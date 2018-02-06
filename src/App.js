@@ -62,18 +62,18 @@ class App extends Component {
   stick = (playerIndex) => {
     const players = [ ...this.state.players]
     players[playerIndex] = stickLogic(players[playerIndex])
-    const { player, endState } = dealerLogic(this.state)
+    const { player, endState, currentCardArray } = dealerLogic(this.state)
     players[0] = player;
-    this.setState({ players, currentPlayer: 'The Dealer', currentPlayerType: 'dealer', endState })
+    this.setState({ players, currentPlayer: 'The Dealer', currentPlayerType: 'dealer', endState, currentCardArray })
   }
 
   render() {
     const { currentPlayer, endState } = this.state
     return (
       <div className="App">
+        <h1> Blackjack </h1>
         { endState === 'lose' && <h1> You Lose Sorry! </h1> }
         { endState === 'win' && <h1> You Win Wohoo! </h1> }
-        <Button content='Reset' className='button' onClick={ this.reset } />
         { this.state.players.map((player, index) => (
           <Player
             key={ index }
@@ -84,6 +84,7 @@ class App extends Component {
             hitClick= { this.hit }
           /> ))
         }
+        <Button content='Reset' className='reset' onClick={ this.reset } />
       </div>
     )
   }

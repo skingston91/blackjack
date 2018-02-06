@@ -6,3 +6,8 @@
   width: 50px;
   text-align: center;
 }
+
+.reset {
+  border: 1px red solid;
+  color: red;
+}
