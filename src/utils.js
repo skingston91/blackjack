@@ -55,7 +55,7 @@ export const cardNormalizer = (card, show) => {
       code: ucs2.encode([0x1F0A1]),
     }
   }
-  code = `0x1F0A${card}`
+  code = card === 10 ? 0x1F0AA : `0x1F0A${card}`
   return {
     value: card,
     name: card && card.toString(),
